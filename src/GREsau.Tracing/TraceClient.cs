@@ -45,8 +45,19 @@ namespace GREsau.Tracing
 
         public async Task CollectAsync(string outFilePath, CancellationToken ct)
         {
-            var processId = GetCurrentProcessId();
-            using var traceStream = EventPipeClient.CollectTracing(processId, SessionConfiguration, out var sessionId);
+            using var fileStream = new FileStream(outFilePath, FileMode.Create, FileAccess.Write);
+            await CollectAsync(fileStream, ct);
+        }
+
+        public async Task CollectAsync(Stream outStream, TimeSpan duration)
+        {
+            using var cts = new CancellationTokenSource(duration);
+            await CollectAsync(outStream, cts.Token);
+        }
+
+        public async Task CollectAsync(Stream outStream, CancellationToken ct)
+        {
+            using var traceStream = EventPipeClient.CollectTracing(ProcessId, SessionConfiguration, out var sessionId);
 
             if (sessionId == 0)
             {
@@ -54,8 +65,6 @@ namespace GREsau.Tracing
             }
 
             var stoppedReading = false;
-            var buffer = new byte[16 * 1024];
-            using var fileStream = new FileStream(outFilePath, FileMode.Create, FileAccess.Write);
 
             // If ct is already cancelled, then ct.Register will run its callback synchronously.
             // Calling StopTracing synchronously here would deadlock as there would be nothing to
@@ -64,21 +73,13 @@ namespace GREsau.Tracing
             {
                 if (!stoppedReading)
                 {
-                    EventPipeClient.StopTracing(processId, sessionId);
+                    EventPipeClient.StopTracing(ProcessId, sessionId);
                 }
             }));
 
             try
             {
-                while (true)
-                {
-                    var nBytesRead = await traceStream.ReadAsync(buffer, 0, buffer.Length);
-                    if (nBytesRead == 0)
-                    {
-                        break;
-                    }
-                    fileStream.Write(buffer, 0, nBytesRead);
-                }
+                await traceStream.CopyToAsync(outStream);
             }
             finally
             {
