@@ -4,7 +4,13 @@ GREsau.Tracing is a simplified alternative to [dotnet-trace](https://github.com/
 GREsau.Tracing will only output `nettrace`-format files. These can be viewed on Windows using [PerfView](https://github.com/microsoft/perfview), or converted to `speedscope`-format using dotnet-trace's convert command, and then viewed at https://www.speedscope.app.
 ```sh
 # Converts nettrace file to speedscope, writing to trace.speedscope.json
-$ dotnet-trace convert --format Speedscope trace.nettrace
+> dotnet-trace convert --format Speedscope trace.nettrace
+```
+
+## Installing
+Install via NuGet:
+```sh
+> dotnet add package GREsau.Tracing
 ```
 
 This package has a dependency on `Microsoft.Diagnostics.Tools.RuntimeClient`, which is not yet available on NuGet (see [dotnet/diagnostics#343](https://github.com/dotnet/diagnostics/issues/343)). In the meantime, you can get it from the dotnet-core internal feed by adding the `https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json` NuGet source. This can be done by including this NuGet.Config file in your project:
@@ -19,7 +25,7 @@ This package has a dependency on `Microsoft.Diagnostics.Tools.RuntimeClient`, wh
 
 ## Basic Usage
 
-To trace the current process for a period of time, saving the file as "trace.nettrace":
+To trace the current process for a period of time, saving the output file as "trace.nettrace":
 
 ```csharp
 var client = new TraceClient();
