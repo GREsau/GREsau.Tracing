@@ -2,6 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+
+    <Title>GREsau.Tracing</Title>
+    <Description>Easy performance tracing for .NET Core</Description>
+    <Authors>GREsau</Authors>
+    <RepositoryUrl>https://github.com/GREsau/GREsau.Tracing</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/GREsau/GREsau.Tracing</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>true</IncludeSource>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

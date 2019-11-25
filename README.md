@@ -7,6 +7,16 @@ GREsau.Tracing will only output `nettrace`-format files. These can be viewed on 
 $ dotnet-trace convert --format Speedscope trace.nettrace
 ```
 
+This package has a dependency on `Microsoft.Diagnostics.Tools.RuntimeClient`, which is not yet available on NuGet (see [dotnet/diagnostics#343](https://github.com/dotnet/diagnostics/issues/343)). In the meantime, you can get it from the dotnet-core internal feed by adding the `https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json` NuGet source. This can be done by including this NuGet.Config file in your project:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+        <add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
+    </packageSources>
+</configuration>
+```
+
 ## Basic Usage
 
 To trace the current process for a period of time, saving the file as "trace.nettrace":
