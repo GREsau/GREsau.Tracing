@@ -7,20 +7,12 @@ GREsau.Tracing will only output `nettrace`-format files. These can be viewed on 
 > dotnet-trace convert --format Speedscope trace.nettrace
 ```
 
+This library makes use of [Microsoft.Diagnostics.NETCore.Client](https://www.nuget.org/packages/Microsoft.Diagnostics.NETCore.Client). If you're looking for something more powerful/flexible and you're willing to accept the complexity that comes with that, consider using that library directly.
+
 ## Installing
 Install via NuGet:
 ```sh
 > dotnet add package GREsau.Tracing
-```
-
-This package has a dependency on `Microsoft.Diagnostics.Tools.RuntimeClient`, which is not yet available on NuGet (see [dotnet/diagnostics#343](https://github.com/dotnet/diagnostics/issues/343)). In the meantime, you can get it from the dotnet-core internal feed by adding the `https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json` NuGet source. This can be done by including this NuGet.Config file in your project:
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-    <packageSources>
-        <add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-    </packageSources>
-</configuration>
 ```
 
 ## Basic Usage
@@ -35,17 +27,17 @@ await client.CollectAsync("trace.nettrace", TimeSpan.FromMinutes(1));
 You can also trace a different process by passing in its ID:
 
 ```csharp
-var client = new TraceClient(processId: 123);
+var client = new TraceClient(123);
 await client.CollectAsync("trace.nettrace", TimeSpan.FromMinutes(1));
 ```
 
-By default, `TraceClient` will track CPU usage and general .NET runtime information, equivalent to running dotnet-trace with the cpu-sampling (default) profile. If you want to trace something different, you can pass in a collection of `Microsoft.Diagnostics.Tools.RuntimeClient.Provider`s:
+By default, `TraceClient` will track CPU usage and general .NET runtime information, equivalent to running dotnet-trace with the cpu-sampling (default) profile. If you want to trace something different, you can pass in a collection of `Microsoft.Diagnostics.NETCore.Client.EventPipeProvider`s:
 
 ```csharp
-var gcCollectProvider = new Provider(
+var gcCollectProvider = new EventPipeProvider(
     "Microsoft-Windows-DotNETRuntime",
-    (ulong)ClrTraceEventParser.Keywords.GC | (ulong)ClrTraceEventParser.Keywords.Exception,
-    EventLevel.Informational);
-var client = new TraceClient(new[] { gcCollectProvider });
+    EventLevel.Informational,
+    (long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception));
+var client = new TraceClient(providers: new[] { gcCollectProvider });
 await client.CollectAsync("trace.nettrace", TimeSpan.FromMinutes(1));
 ```

@@ -3,7 +3,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
+using Microsoft.Diagnostics.NETCore.Client;
 
 namespace GREsau.Tracing.BasicTrace
 {
@@ -30,16 +30,16 @@ namespace GREsau.Tracing.BasicTrace
                     "--buffersize",
                     "Sets the size of the in-memory circular buffer in megabytes. Defaults to 256 MB.")
                 {
-                    Argument = new Argument<uint>("size", 256)
+                    Argument = new Argument<int>("size", 256)
                 },
             };
 
-            rootCommand.Handler = CommandHandler.Create<string, string, uint, CancellationToken>(StartTrace);
+            rootCommand.Handler = CommandHandler.Create<string, string, int, CancellationToken>(StartTrace);
 
             return rootCommand.InvokeAsync(args);
         }
 
-        private static async Task<int> StartTrace(string process, string output, uint bufferSize, CancellationToken ct)
+        private static async Task<int> StartTrace(string process, string output, int bufferSize, CancellationToken ct)
         {
             int pid;
             string processName;
@@ -53,7 +53,7 @@ namespace GREsau.Tracing.BasicTrace
                 return 1;
             }
 
-            var client = new TraceClient(bufferSize, pid);
+            var client = new TraceClient(pid, bufferSize);
 
             Console.WriteLine($"Starting trace of process {pid} ({processName}) - press Ctrl+C to stop...");
             await client.CollectAsync(output, ct);
@@ -82,7 +82,7 @@ namespace GREsau.Tracing.BasicTrace
                 }
             }
 
-            foreach (var pid in EventPipeClient.ListAvailablePorts())
+            foreach (var pid in DiagnosticsClient.GetPublishedProcesses())
             {
                 try
                 {

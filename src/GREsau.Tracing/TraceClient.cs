@@ -5,36 +5,28 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
+using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace GREsau.Tracing
 {
     public class TraceClient
     {
-        // Copied from https://github.com/dotnet/diagnostics/blob/8ccd54cde5a7c671c44051336ee5c2500f6aff19/src/Tools/dotnet-trace/CommandLine/Commands/ListProfilesCommandHandler.cs#L46
-        private static readonly Provider[] CpuSamplingProviders = new[] {
-            new Provider("Microsoft-DotNETCore-SampleProfiler"),
-            new Provider("Microsoft-Windows-DotNETRuntime", (ulong)ClrTraceEventParser.Keywords.Default, EventLevel.Informational),
+        // Copied from https://github.com/dotnet/diagnostics/blob/125ea40662c36fa49e1d742e44154fd9a5b0a4d1/src/Tools/dotnet-trace/CommandLine/Commands/ListProfilesCommandHandler.cs#L46
+        private static readonly EventPipeProvider[] CpuSamplingProviders = new[] {
+            new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Informational),
+            new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
         };
 
-        public SessionConfiguration SessionConfiguration { get; }
         public int ProcessId { get; }
+        public int CircularBufferSizeMb { get; }
+        public IReadOnlyCollection<EventPipeProvider> Providers { get; }
 
-        public TraceClient(uint circularBufferSizeMb = 256, int? processId = null)
-            : this(CpuSamplingProviders, circularBufferSizeMb, processId)
+        public TraceClient(int? processId = null, int circularBufferSizeMb = 256, IReadOnlyCollection<EventPipeProvider> providers = null)
         {
-        }
-
-        public TraceClient(IReadOnlyCollection<Provider> providers, uint circularBufferSizeMb = 256, int? processId = null)
-            : this(new SessionConfiguration(circularBufferSizeMb, EventPipeSerializationFormat.NetTrace, providers), processId)
-        {
-        }
-
-        public TraceClient(SessionConfiguration sessionConfiguration, int? processId = null)
-        {
-            SessionConfiguration = sessionConfiguration;
             ProcessId = processId ?? GetCurrentProcessId();
+            CircularBufferSizeMb = circularBufferSizeMb;
+            Providers = providers ?? CpuSamplingProviders;
         }
 
         public async Task CollectAsync(string outFilePath, TimeSpan duration)
@@ -57,29 +49,26 @@ namespace GREsau.Tracing
 
         public async Task CollectAsync(Stream outStream, CancellationToken ct)
         {
-            using var traceStream = EventPipeClient.CollectTracing(ProcessId, SessionConfiguration, out var sessionId);
-
-            if (sessionId == 0)
-            {
-                throw new Exception("Unable to create trace session.");
-            }
+            var diagnosticsClient = new DiagnosticsClient(ProcessId);
+            using var session = diagnosticsClient.StartEventPipeSession(Providers, circularBufferMB: CircularBufferSizeMb);
 
             var stoppedReading = false;
 
             // If ct is already cancelled, then ct.Register will run its callback synchronously.
-            // Calling StopTracing synchronously here would deadlock as there would be nothing to
-            // consume traceStream - to avoid this, we call StopTracing from a different thread.
+            // Calling Stop synchronously here would deadlock as there would be nothing to
+            // consume traceStream - to avoid this, we call Stop from a different thread.
+            // TODO is this is still necessary now we're using the new diagnostics client?
             ct.Register(() => Task.Run(() =>
             {
                 if (!stoppedReading)
                 {
-                    EventPipeClient.StopTracing(ProcessId, sessionId);
+                    session.Stop();
                 }
             }));
 
             try
             {
-                await traceStream.CopyToAsync(outStream);
+                await session.EventStream.CopyToAsync(outStream);
             }
             finally
             {
