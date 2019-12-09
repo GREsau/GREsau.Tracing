@@ -10,6 +10,7 @@
     <PackageProjectUrl>https://github.com/GREsau/GREsau.Tracing</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

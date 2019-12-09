@@ -1,5 +1,5 @@
 # GREsau.Tracing
-GREsau.Tracing is a simplified alternative to [dotnet-trace](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md), consumable as a C# library rather than a CLI tool.
+GREsau.Tracing is a library to perform performance tracing of .NET Core applications. Essentially, it is a simplified alternative to [dotnet-trace](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md), consumable as a C# library rather than a CLI tool.
 
 GREsau.Tracing will only output `nettrace`-format files. These can be viewed on Windows using [PerfView](https://github.com/microsoft/perfview), or converted to `speedscope`-format using dotnet-trace's convert command, and then viewed at https://www.speedscope.app.
 ```sh
